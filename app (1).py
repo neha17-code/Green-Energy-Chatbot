@@ -1,68 +1,57 @@
 import streamlit as st
+import pandas as pd
+import joblib
 
-# -----------------------------
-# PAGE CONFIG
-# -----------------------------
-st.set_page_config(
-    page_title="Green Energy Awareness Chatbot",
-    page_icon="🌱",
-    layout="centered"
+# Load model and training columns
+saved_data = joblib.load("model.pkl")
+model = saved_data["model"]
+columns = saved_data["columns"]
+
+st.title("🌱 Sustainability Score Prediction System")
+
+# Product Type
+product_type = st.selectbox(
+    "Select Product Type",
+    ["Automotive", "Pharmaceutical", "Food", "Apparel", "Electronics"]
 )
 
-# -----------------------------
-# TITLE
-# -----------------------------
-st.title("🌱 Green Energy Awareness Chatbot")
-st.write("Ask about renewable energy subsidies, ROI, carbon savings, and government schemes.")
+# Numeric Inputs
+raw_material = st.number_input("Raw Material Usage (kg)", min_value=0.0)
+energy_consumption = st.number_input("Energy Consumption (kWh)", min_value=0.0)
+waste_generated = st.number_input("Waste Generated (kg)", min_value=0.0)
+transport_distance = st.number_input("Transport Distance (km)", min_value=0.0)
+co2_emissions = st.number_input("CO2 Emissions (kg)", min_value=0.0)
+manufacturing_energy = st.number_input("Manufacturing Energy (kWh)", min_value=0.0)
+renewable_energy = st.number_input("Renewable Energy (%)", min_value=0.0)
+cost = st.number_input("Cost ($)", min_value=0.0)
+delivery_time = st.number_input("Delivery Time (days)", min_value=0.0)
 
-# -----------------------------
-# CHAT LOGIC FUNCTION
-# -----------------------------
-def chatbot_response(user_input):
+# PREDICTION BUTTON
+if st.button("Predict Sustainability Score"):
 
-    user_input = user_input.lower()
+    # Create input dictionary
+    input_data = {col: 0 for col in columns}
 
-    # Solar Subsidy
-    if "solar subsidy" in user_input:
-        return "In India, rooftop solar systems are eligible for government subsidies under the PM Surya Ghar scheme. Residential users can get up to 40% subsidy depending on system capacity."
+    # Encode product type
+    product_column = f"Product_Type_{product_type}"
+    if product_column in input_data:
+        input_data[product_column] = 1
 
-    # ROI
-    elif "roi" in user_input or "return on investment" in user_input:
-        return "Rooftop solar systems typically recover investment in 4–6 years. After that, electricity savings become profit."
+    # Assign numeric values
+    input_data["Raw_Material_Usage_kg"] = raw_material
+    input_data["Energy_Consumption_kWh"] = energy_consumption
+    input_data["Waste_Generated_kg"] = waste_generated
+    input_data["Transport_Distance_km"] = transport_distance
+    input_data["CO2_Emissions_kg"] = co2_emissions
+    input_data["Manufacturing_Energy_kWh"] = manufacturing_energy
+    input_data["Renewable_Energy_%"] = renewable_energy
+    input_data["Cost_$"] = cost
+    input_data["Delivery_Time_days"] = delivery_time
 
-    # Carbon Savings
-    elif "carbon" in user_input:
-        return "Installing 1 kW of solar can reduce approximately 1–1.5 tons of CO₂ emissions per year."
+    # Convert to DataFrame
+    input_df = pd.DataFrame([input_data])
 
-    # Wind Energy
-    elif "wind" in user_input:
-        return "Wind energy is suitable for high-wind regions. It is widely used for commercial and large-scale power generation."
+    # Predict
+    prediction = model.predict(input_df)
 
-    # Government Scheme
-    elif "government scheme" in user_input or "scheme" in user_input:
-        return "India promotes renewable energy through schemes like PM Surya Ghar Yojana, National Solar Mission, and state-level subsidy programs."
-
-    # Installation Cost
-    elif "cost" in user_input:
-        return "Rooftop solar installation costs range from ₹45,000 to ₹60,000 per kW before subsidy."
-
-    # Default reply
-    else:
-        return "I'm here to help with renewable energy information. Please ask about solar subsidy, ROI, carbon savings, cost, or government schemes."
-
-
-# -----------------------------
-# INPUT BOX
-# -----------------------------
-user_question = st.text_input("Enter your question:")
-
-# -----------------------------
-# BUTTON ACTION
-# -----------------------------
-if st.button("Ask"):
-
-    if user_question.strip() == "":
-        st.warning("Please enter a question.")
-    else:
-        response = chatbot_response(user_question)
-        st.success(response)
+    st.success(f"Predicted Sustainability Score: {prediction[0]:.2f}")
